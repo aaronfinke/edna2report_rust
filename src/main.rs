@@ -4,7 +4,7 @@ use std::fs::File;
 use std::io::BufReader;
 mod aimless;
 use aimless::Aimless;
-use quick_xml::de::DeError;
+use std::time::Instant;
 fn main() {
     let aimless_xml :&str = "/Users/aaronfinke/Documents/edna2report_rust/example_files/aimless.xml";
     let _pointless_xml :&str = "/Users/aaronfinke/Documents/edna2report_rust/example_files/pointless.xml";
@@ -12,7 +12,7 @@ fn main() {
     let _integrate_lp :&str = "/Users/aaronfinke/Documents/edna2report_rust/example_files/INTEGRATE.LP";
     let _xdsstat_lp :&str = "/Users/aaronfinke/Documents/edna2report_rust/example_files/XDSSTAT.LP";
     let _xtriage_json :&str = "/Users/aaronfinke/Documents/edna2report_rust/example_files/outDataMmtbxXtriageTask.json";
-
+    let t1 = Instant::now();
     let path = Path::new(aimless_xml);
     let file = File::open(path).unwrap();
     let reader = BufReader::new(file);
@@ -28,5 +28,6 @@ fn main() {
         }
     };
     dbg!(y);
+    println!("time: {:?}",t1.elapsed());
 }
 

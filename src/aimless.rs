@@ -1,10 +1,7 @@
 #![allow(non_snake_case)]
 #![allow(dead_code)]
 
-use std::num::ParseIntError;
-
-use itertools::Itertools;
-use serde::{Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Deserializer};
 
 #[derive(Deserialize, Debug)]
 pub struct Aimless {
@@ -16,7 +13,7 @@ pub struct Aimless {
 
 	ReflectionData: ReflectionData,
     ReflectionFile: ReflectionFile,
-    ScaleModelFail: String,
+    ScaleModelFail: ScaleModelFail,
     OnlyMerge: String,
     RotationalOverlap:RotationalOverlap,
 
@@ -57,13 +54,13 @@ pub struct Cell {
     gamma:f64
 }
 
-// #[derive(Deserialize, Debug)]
-// pub struct ScaleModelFail {
-//     #[serde(rename="@class")]
-//     class:String,
-//     #[serde(rename="$value")]
-//     _value:Vec<String>,
-// }
+#[derive(Deserialize, Debug)]
+pub struct ScaleModelFail {
+    #[serde(rename="@class")]
+    class:String,
+    #[serde(rename="$value")]
+    _value:Vec<String>,
+}
 #[derive(Deserialize, Debug)]
 pub struct RotationalOverlap {
     EnoughOverlap:bool,
@@ -188,7 +185,7 @@ pub struct Line {
 }
 
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Deserialize, Debug)]
 pub struct ReflectionData {
     ResolutionHigh: f64,
     NumberReflections: i32,
@@ -199,19 +196,19 @@ pub struct ReflectionData {
     NumberDatasets: i32,
     Dataset: Dataset,
 }
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Deserialize, Debug)]
 pub struct Dataset {
     Wavelength : f64,
     Run: Run,
 	#[serde(rename = "@name")]
     name: String
 }
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Deserialize, Debug)]
 pub struct Run {
     number: i32,
     BatchOffset: i32,
-	// #[serde(deserialize_with="to_tuple")]
-    BatchRange:String,
+	#[serde(deserialize_with="to_tuple")]
+    BatchRange:(i32,i32),
     FileStream: String,
 }
 #[derive(Deserialize, Debug)]
@@ -223,19 +220,19 @@ pub struct Outliers {
 #[derive(Deserialize, Debug)]
 pub struct OutlierControl {
     OutlierWeightType: String,
-    Main: Outlier_Main,
-    Anom: Outlier_Anom,
-    EmaxTest: Outlier_Emaxtest,
+    Main: OutlierMain,
+    Anom: OutlierAnom,
+    EmaxTest: OutlierEmaxtest,
 }
 
 #[derive(Deserialize, Debug)]
-struct Outlier_Main {
+pub struct OutlierMain {
     SDrej: f64,
     SDrej2: f64,
     Reject2policy:String,
 }
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
-struct Outlier_Anom {
+#[derive(Deserialize, Debug)]
+pub struct OutlierAnom {
     #[serde(rename="@dataset")]
     dataset: String,
     SDrej: f64,
@@ -243,7 +240,7 @@ struct Outlier_Anom {
     Reject2policy:String,
 }
 #[derive(Deserialize, Debug)]
-struct Outlier_Emaxtest {
+pub struct OutlierEmaxtest {
     EmaxAcentric: f64,
     EmaxCentric: f64,
 }
@@ -262,25 +259,25 @@ pub struct DatasetResult {
 }
 #[derive(Deserialize, Debug)]
 enum ResultEnum {
-    ResolutionLow(shellResults),
-    ResolutionHigh(shellResults),
-    Rmerge(shellResults),
-    RmergeOverall(shellResults),
-    Rmeas(shellResults),
-    RmeasOverall(shellResults),
-    Rpim(shellResults),
-    RpimOverall(shellResults),
+    ResolutionLow(ShellResults),
+    ResolutionHigh(ShellResults),
+    Rmerge(ShellResults),
+    RmergeOverall(ShellResults),
+    Rmeas(ShellResults),
+    RmeasOverall(ShellResults),
+    Rpim(ShellResults),
+    RpimOverall(ShellResults),
     RmergeTopI(String),
-    NumberObservations(shellResults),
-    NumberReflections(shellResults),
-    MeanIoverSD(shellResults),
-    CChalf(shellResults),
-    Completeness(shellResults),
-    Multiplicity(shellResults),
-    MeanChiSq(shellResults),
-    AnomalousCompleteness(shellResults),
-    AnomalousMultiplicity(shellResults),
-    AnomalousCChalf(shellResults),
+    NumberObservations(ShellResults),
+    NumberReflections(ShellResults),
+    MeanIoverSD(ShellResults),
+    CChalf(ShellResults),
+    Completeness(ShellResults),
+    Multiplicity(ShellResults),
+    MeanChiSq(ShellResults),
+    AnomalousCompleteness(ShellResults),
+    AnomalousMultiplicity(ShellResults),
+    AnomalousCChalf(ShellResults),
     AnomalousNPslope(f64),
     AnomalousLimitEstimate(AnomalousLimitEstimate),
     ResolutionLimitEstimate(ResolutionLimitEstimate),
@@ -314,7 +311,7 @@ pub struct ResolutionLimitEstimate {
 }
 
 #[derive(Deserialize, Debug)]
-struct shellResults {
+struct ShellResults {
     Overall:f64,
     Inner:f64,
     Outer:f64,
@@ -331,7 +328,7 @@ pub struct OutputFiles {
     SplitUnmerged:bool,
     OriginalHKL:bool,
 }
-fn to_tuple<'de, D>(deserializer: D) -> Result<(i32,i32), Box<dyn std::error::Error>>
+fn to_tuple<'de, D>(deserializer: D) -> Result<(i32,i32), D::Error>
 where
     D: Deserializer<'de>,
 {
@@ -342,7 +339,7 @@ where
     
 	let w = f.split_whitespace().collect::<Vec<&str>>();
     let k: Vec<i32> = w.into_iter()
-        .map(|x| x.parse::<i32>())
-        .try_collect()?;
-    Ok((k[1],k[2]))
+        .map(|x| x.parse::<i32>().unwrap())
+        .collect();
+    Ok((k[0],k[1]))
 }
