@@ -1,7 +1,6 @@
 #![allow(non_snake_case)]
 #![allow(dead_code)]
 #![allow(non_camel_case_types)]
-use std::num::ParseIntError;
 
 use serde::{Deserialize, Deserializer};
 
@@ -20,7 +19,7 @@ pub enum AimlessFields {
     ReflectionData(ReflectionData),
     ReflectionFile(ReflectionFile),
     ScaleModelFail(ScaleModelFail),
-    OnlyMerge(Option<String>),
+    OnlyMerge {},
     RotationalOverlap(RotationalOverlap),
     OutlierControl(OutlierControl),
     BatchGroupMessage(String),
