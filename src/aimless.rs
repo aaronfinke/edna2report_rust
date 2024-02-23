@@ -1,189 +1,201 @@
 #![allow(non_snake_case)]
 #![allow(dead_code)]
+#![allow(non_camel_case_types)]
+use std::num::ParseIntError;
 
 use serde::{Deserialize, Deserializer};
 
 #[derive(Deserialize, Debug)]
 pub struct Aimless {
-	#[serde(rename = "@version")]
-	version: String,
-	
-	#[serde(rename = "@RunTime")]
-	RunTime: String,
-
-	ReflectionData: ReflectionData,
-    ReflectionFile: ReflectionFile,
-    ScaleModelFail: ScaleModelFail,
-    OnlyMerge: String,
-    RotationalOverlap:RotationalOverlap,
-
-    #[serde(rename="$value")]
-    fields:Vec<Fields>,
-
-    AnomalousStatus:String,
-    Result:AimlessResult,
-    OutputFiles:OutputFiles,
-
+    #[serde(rename = "@version")]
+    version: String,
+    #[serde(rename = "@RunTime")]
+    RunTime: String,
+    #[serde(rename = "$value")]
+    pub fields: Vec<AimlessFields>,
 }
 
 #[derive(Deserialize, Debug)]
-enum Fields {
+pub enum AimlessFields {
+    ReflectionData(ReflectionData),
+    ReflectionFile(ReflectionFile),
+    ScaleModelFail(ScaleModelFail),
+    OnlyMerge(Option<String>),
+    RotationalOverlap(RotationalOverlap),
     OutlierControl(OutlierControl),
     BatchGroupMessage(String),
     BatchGroupWidth(f64),
     BatchGroupNumber(i32),
     Outliers(Outliers),
-    CCP4Table,
+    CCP4Table(CCP4Table),
+    AnomalousStatus(String),
+    Result(AimlessResult),
+    OutputFiles(OutputFiles),
 }
+
 #[derive(Deserialize, Debug)]
 pub struct ReflectionFile {
-    #[serde(rename="@stream")]
-    stream:String,
-    #[serde(rename="@name")]
-    name:String,
-    cell:Cell,
-    SpacegroupName:String,
+    #[serde(rename = "@stream")]
+    stream: String,
+    #[serde(rename = "@name")]
+    name: String,
+    cell: Cell,
+    SpacegroupName: String,
 }
 #[derive(Deserialize, Debug)]
 pub struct Cell {
-    a:f64,
-    b:f64,
-    c:f64,
-    alpha:f64,
-    beta:f64,
-    gamma:f64
+    a: f64,
+    b: f64,
+    c: f64,
+    alpha: f64,
+    beta: f64,
+    gamma: f64,
 }
 
 #[derive(Deserialize, Debug)]
 pub struct ScaleModelFail {
-    #[serde(rename="@class")]
-    class:String,
-    #[serde(rename="$value")]
-    _value:Vec<String>,
+    #[serde(rename = "@class")]
+    class: String,
+    #[serde(rename = "$value")]
+    value: Vec<String>,
 }
 #[derive(Deserialize, Debug)]
 pub struct RotationalOverlap {
-    EnoughOverlap:bool,
-    AverageOverlap:f64,
-    Overlapthreshold:f64,
-    AllowedGap:f64,
-    MinimumOverlap:f64,
-}
-#[derive(Deserialize, Debug)]
-pub enum CCP4Table {
-    CCP4TableOne,
-    CCP4TableTwo
+    EnoughOverlap: bool,
+    AverageOverlap: f64,
+    Overlapthreshold: f64,
+    AllowedGap: f64,
+    MinimumOverlap: f64,
 }
 
 #[derive(Deserialize, Debug)]
-pub struct CCP4TableOne {
-    #[serde(rename="@groupID")]
-    groupID:String,
-    #[serde(rename="@id")]
-    id:String,
-    #[serde(rename="@title")]
-    title:String,
-    
-    headers: Option<Headers>,
-    #[serde(rename="$value")]
-    data: Vec<String>,
-    #[serde(rename="$value")]
-    plot: Option<Vec<Plot>>,
+pub struct CCP4Table {
+    #[serde(rename = "@title", default)]
+    title: Option<String>,
+    #[serde(rename = "@groupID", default)]
+    groupID: Option<String>,
+    #[serde(rename = "@id", default)]
+    id: Option<String>,
+    #[serde(rename = "$value")]
+    fields: Vec<CCP4Choice>,
 }
-
 #[derive(Deserialize, Debug)]
-pub struct CCP4TableTwo {
-    #[serde(rename="@title")]
-    title:String,
-    
-    headers: Option<Headers>,
-    #[serde(rename="$value")]
-    data: Vec<String>,
-    #[serde(rename="$value")]
-    plot: Option<Vec<Plot>>,
+pub enum CCP4Choice {
+    plot(Plot),
+    headers(Headers),
+    data(Option<String>),
 }
 
 #[derive(Deserialize, Debug)]
 pub struct Headers {
-    #[serde(rename="@separator")]
-    separator:Option<String>,
-    #[serde(rename="$value")]
-    _value:String,
+    #[serde(rename = "@separator")]
+    separator: Option<String>,
+    #[serde(rename = "$value")]
+    _value: String,
 }
 #[derive(Deserialize, Debug)]
-pub struct Data{
-    #[serde(rename="@id")]
-    id:Option<String>,
-    #[serde(rename="$value")]
-    _value:String,
+pub struct Data {
+    #[serde(rename = "@id")]
+    id: Option<String>,
+    #[serde(rename = "$value")]
+    _value: String,
 }
 #[derive(Deserialize, Debug)]
 pub struct Plot {
-    title:Option<String>,
-    xrange:Option<Xrange>,
-    yrange:Option<Yrange>,
-    fixaspectratio:Option<bool>,
-    xlabel:Option<String>,
-    ylabel:Option<String>,
-    showlegend:Option<bool>,
-    legendposition:Option<LegendPosition>,
-    #[serde(rename="$value")]
-    plotline:Option<Vec<Plotline>>,
-    #[serde(rename="$value")]
-    line: Option<Vec<Line>>,
+    #[serde(rename = "$value")]
+    ploptions: Vec<Ploptions>,
 }
 
 #[derive(Deserialize, Debug)]
-pub struct Xrange{
-    #[serde(rename="@min")]
-    min:String,
-    #[serde(rename="@max")]
-    max:String,
+pub enum Ploptions {
+    title(String),
+    xrange {
+        #[serde(rename = "@min")]
+        min: String,
+        #[serde(rename = "@max")]
+        max: String,
+    },
+    yrange {
+        #[serde(rename = "@min")]
+        min: String,
+        #[serde(rename = "@max")]
+        max: String,
+    },
+    description(String),
+    fixaspectratio(bool),
+    xlabel(String),
+    ylabel(String),
+    showlegend(bool),
+    legendposition(LegendPosition),
+    plotline(Plotline),
+    line(Line),
+    circle(Circle),
+    xintegral(bool),
+    xscale(String),
+}
+
+#[derive(Deserialize, Debug)]
+pub struct Xrange {
+    #[serde(rename = "@min")]
+    min: String,
+    #[serde(rename = "@max")]
+    max: String,
 }
 #[derive(Deserialize, Debug)]
 pub struct Yrange {
-    #[serde(rename="@min")]
-    min:String,
-    #[serde(rename="@max")]
-    max:String,
+    #[serde(rename = "@min")]
+    min: String,
+    #[serde(rename = "@max")]
+    max: String,
 }
 #[derive(Deserialize, Debug)]
 pub struct LegendPosition {
-    #[serde(rename="@x")]
-    x:String,
-    #[serde(rename="@y")]
-    y:String,
+    #[serde(rename = "@x")]
+    x: String,
+    #[serde(rename = "@y")]
+    y: String,
 }
 #[derive(Deserialize, Debug)]
 pub struct Plotline {
-    #[serde(rename="@dataid")]
-    dataid:Option<String>,
-    #[serde(rename="@xcol")]
-    xcol:Option<String>,
-    #[serde(rename="@ycol")]
-    ycol:Option<String>,
-    label:Option<String>,
-    symbolsize:Option<String>,
-    colour:Option<String>,
-    markeredgewidth:Option<String>,
-    linestyle:Option<String>,
+    #[serde(rename = "@dataid")]
+    dataid: Option<String>,
+    #[serde(rename = "@xcol")]
+    xcol: Option<String>,
+    #[serde(rename = "@ycol")]
+    ycol: Option<String>,
+    label: Option<String>,
+    symbolsize: Option<String>,
+    colour: Option<String>,
+    markeredgewidth: Option<String>,
+    linestyle: Option<String>,
 }
 #[derive(Deserialize, Debug)]
 pub struct Line {
-    #[serde(rename="@x1")]
-    x1:String,
-    #[serde(rename="@y1")]
-    y1:String,
-    #[serde(rename="@x2")]
-    x2:String,
-    #[serde(rename="@y2")]
-    y2:String,
-    #[serde(rename="@linestyle")]
-    linestyle:String,
-    #[serde(rename="@linecolour")]
-    linecolour:Option<String>,
+    #[serde(rename = "@x1", deserialize_with = "to_f64")]
+    x1: f64,
+    #[serde(rename = "@y1", deserialize_with = "to_f64")]
+    y1: f64,
+    #[serde(rename = "@x2", deserialize_with = "to_f64")]
+    x2: f64,
+    #[serde(rename = "@y2", deserialize_with = "to_f64")]
+    y2: f64,
+    #[serde(rename = "@linestyle")]
+    linestyle: String,
+    #[serde(rename = "@linecolour")]
+    linecolour: Option<String>,
 }
 
+#[derive(Deserialize, Debug)]
+pub struct Circle {
+    #[serde(rename = "@xpos", deserialize_with = "to_f64")]
+    xpos: f64,
+    #[serde(rename = "@ypos", deserialize_with = "to_f64")]
+    ypos: f64,
+    #[serde(rename = "@radius", deserialize_with = "to_f64")]
+    radius: f64,
+    #[serde(rename = "@linecolour")]
+    linecolour: String,
+}
 
 #[derive(Deserialize, Debug)]
 pub struct ReflectionData {
@@ -198,24 +210,24 @@ pub struct ReflectionData {
 }
 #[derive(Deserialize, Debug)]
 pub struct Dataset {
-    Wavelength : f64,
+    Wavelength: f64,
     Run: Run,
-	#[serde(rename = "@name")]
-    name: String
+    #[serde(rename = "@name")]
+    name: String,
 }
 #[derive(Deserialize, Debug)]
 pub struct Run {
     number: i32,
     BatchOffset: i32,
-	#[serde(deserialize_with="to_tuple")]
-    BatchRange:(i32,i32),
+    #[serde(deserialize_with = "to_tuple")]
+    BatchRange: (i32, i32),
     FileStream: String,
 }
 #[derive(Deserialize, Debug)]
 pub struct Outliers {
     RejectNumberUnique: i32,
     RejectNumberFriedel: i32,
-    RejectNumberEmax:i32,
+    RejectNumberEmax: i32,
 }
 #[derive(Deserialize, Debug)]
 pub struct OutlierControl {
@@ -229,15 +241,15 @@ pub struct OutlierControl {
 pub struct OutlierMain {
     SDrej: f64,
     SDrej2: f64,
-    Reject2policy:String,
+    Reject2policy: String,
 }
 #[derive(Deserialize, Debug)]
 pub struct OutlierAnom {
-    #[serde(rename="@dataset")]
+    #[serde(rename = "@dataset")]
     dataset: String,
     SDrej: f64,
     SDrej2: f64,
-    Reject2policy:String,
+    Reject2policy: String,
 }
 #[derive(Deserialize, Debug)]
 pub struct OutlierEmaxtest {
@@ -247,13 +259,13 @@ pub struct OutlierEmaxtest {
 
 #[derive(Deserialize, Debug)]
 pub struct AimlessResult {
-    Dataset:DatasetResult,
+    Dataset: DatasetResult,
 }
 
 #[derive(Deserialize, Debug)]
 pub struct DatasetResult {
-    #[serde(rename="@name")]
-    name:String,
+    #[serde(rename = "@name")]
+    name: String,
     #[serde(rename = "$value")]
     field: Vec<ResultEnum>,
 }
@@ -288,58 +300,68 @@ enum ResultEnum {
     MaximumSDcorrectionFulls(f64),
     MinimumSDcorrectionPartials(f64),
     MaximumSDcorrectionPartials(f64),
-
 }
 #[derive(Deserialize, Debug)]
 pub struct AnomalousLimitEstimate {
-    #[serde(rename="@type")]
-    esttype:String,
-    Direction:String,
-    Threshold:f64,
-    MaximumResolution:f64,
-    Message:String,
+    #[serde(rename = "@type")]
+    esttype: String,
+    Direction: String,
+    Threshold: f64,
+    MaximumResolution: f64,
+    Message: String,
 }
 
 #[derive(Deserialize, Debug)]
 pub struct ResolutionLimitEstimate {
-    #[serde(rename="@type")]
-    esttype:String,
-    Direction:String,
-    Threshold:f64,
-    MaximumResolution:f64,
-    Message:Option<String>,
+    #[serde(rename = "@type")]
+    esttype: String,
+    Direction: String,
+    Threshold: f64,
+    MaximumResolution: f64,
+    Message: Option<String>,
 }
 
 #[derive(Deserialize, Debug)]
 struct ShellResults {
-    Overall:f64,
-    Inner:f64,
-    Outer:f64,
+    Overall: f64,
+    Inner: f64,
+    Outer: f64,
 }
 #[derive(Deserialize, Debug)]
 pub struct OutputFiles {
-    OutputType:String,
-    SCAOutputType:String,
-    MTZmergedfilename:String,
-    MTZunmergedfilename:String,
-    SCAmergedfilename:String,
-    SCAunmergedfilename:String,
-    SplitMerged:bool,
-    SplitUnmerged:bool,
-    OriginalHKL:bool,
+    OutputType: String,
+    SCAOutputType: String,
+    MTZmergedfilename: String,
+    MTZunmergedfilename: String,
+    SCAmergedfilename: String,
+    SCAunmergedfilename: String,
+    SplitMerged: bool,
+    SplitUnmerged: bool,
+    OriginalHKL: bool,
 }
-fn to_tuple<'de, D>(deserializer: D) -> Result<(i32,i32), D::Error>
+fn to_tuple<'de, D>(deserializer: D) -> Result<(i32, i32), D::Error>
 where
     D: Deserializer<'de>,
 {
-	let f = match String::deserialize(deserializer) {
-		Ok(x) => x,
-		Err(e) => panic!("Error: {:?}",e)
-	};
-    
-	let w = f.split_whitespace().collect::<Vec<&str>>();
-    let k: Vec<i32> = w.into_iter()
-        .map(|x| x.parse::<i32>().unwrap())
-        .collect();
-    Ok((k[0],k[1]))
+    let f = match String::deserialize(deserializer) {
+        Ok(x) => x,
+        Err(e) => panic!("Error: {:?}", e),
+    };
+
+    let w = f.split_whitespace().collect::<Vec<&str>>();
+    let k: Vec<i32> = w.into_iter().map(|x| x.parse::<i32>().unwrap()).collect();
+    Ok((k[0], k[1]))
+}
+
+fn to_f64<'de, D>(deserializer: D) -> Result<f64, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let f = match String::deserialize(deserializer) {
+        Ok(x) => x,
+        Err(e) => panic!("Error: {:?}", e),
+    };
+
+    let x = f.trim().parse::<f64>().unwrap();
+    Ok(x)
 }
