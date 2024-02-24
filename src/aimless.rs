@@ -30,6 +30,8 @@ pub enum AimlessFields {
     AnomalousStatus(String),
     Result(AimlessResult),
     OutputFiles(OutputFiles),
+    #[serde(other)]
+    etc,
 }
 
 #[derive(Deserialize, Debug)]
@@ -82,7 +84,8 @@ pub struct CCP4Table {
 pub enum CCP4Choice {
     plot(Plot),
     headers(Headers),
-    data(Option<String>),
+    #[serde(deserialize_with = "to_vecvecf64")]
+    data(Vec<Vec<f64>>),
 }
 
 #[derive(Deserialize, Debug)]
@@ -342,13 +345,18 @@ fn to_tuple<'de, D>(deserializer: D) -> Result<(i32, i32), D::Error>
 where
     D: Deserializer<'de>,
 {
+    use serde::de::Error;
     let f = match String::deserialize(deserializer) {
         Ok(x) => x,
         Err(e) => panic!("Error: {:?}", e),
     };
 
     let w = f.split_whitespace().collect::<Vec<&str>>();
-    let k: Vec<i32> = w.into_iter().map(|x| x.parse::<i32>().unwrap()).collect();
+    let k: Vec<i32> = w
+        .into_iter()
+        .map(|x| x.parse::<i32>().map_err(D::Error::custom))
+        .flatten()
+        .collect::<Vec<i32>>();
     Ok((k[0], k[1]))
 }
 
@@ -356,11 +364,28 @@ fn to_f64<'de, D>(deserializer: D) -> Result<f64, D::Error>
 where
     D: Deserializer<'de>,
 {
+    use serde::de::Error;
     let f = match String::deserialize(deserializer) {
         Ok(x) => x,
         Err(e) => panic!("Error: {:?}", e),
     };
+    f.trim().parse::<f64>().map_err(Error::custom)
+}
 
-    let x = f.trim().parse::<f64>().unwrap();
-    Ok(x)
+fn to_vecvecf64<'de, D>(deserializer: D) -> Result<Vec<Vec<f64>>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let datastr = String::deserialize(deserializer)?;
+    let dataf64 = datastr
+        .split('\n')
+        .map(|f| {
+            f.split_whitespace()
+                .map(|g| fast_float::parse(g))
+                .flatten()
+                .collect()
+        })
+        .collect::<Vec<Vec<f64>>>();
+
+    Ok(dataf64)
 }

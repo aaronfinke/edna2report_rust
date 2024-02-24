@@ -1,7 +1,8 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 #[path = "../src/aimless.rs"]
 mod aimless;
-use aimless::Aimless;
+use aimless::{Aimless, AimlessFields};
+
 use quick_xml::de::from_str;
 use std::path::Path;
 use std::{fs::File, io::Read};
