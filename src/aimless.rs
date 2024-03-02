@@ -72,13 +72,13 @@ pub struct RotationalOverlap {
 #[derive(Deserialize, Debug)]
 pub struct CCP4Table {
     #[serde(rename = "@title", default)]
-    title: Option<String>,
+    pub title: Option<String>,
     #[serde(rename = "@groupID", default)]
-    groupID: Option<String>,
+    pub groupID: Option<String>,
     #[serde(rename = "@id", default)]
-    id: Option<String>,
+    pub id: Option<String>,
     #[serde(rename = "$value")]
-    fields: Vec<CCP4Choice>,
+    pub fields: Vec<CCP4Choice>,
 }
 #[derive(Deserialize, Debug)]
 pub enum CCP4Choice {
